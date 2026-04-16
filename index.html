@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grace — A Meditation on the Prodigal Son</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  /* ── RESET & BASE ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0b07;
+    --surface: #1a1510;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --cream: #f0e6d0;
+    --muted: #8a7a65;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'EB Garamond', Garamond, serif;
+  }
+
+  html { scroll-behavior: smooth; font-size: 18px; }
+
+  body {
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--font-body);
+    line-height: 1.8;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grain overlay via SVG filter */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 128px 128px;
+  }
+
+  /* ── NAVIGATION ── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: rgba(13, 11, 7, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+    transition: padding 0.4s ease;
+  }
+
+  nav.scrolled { padding: 0.65rem 2.5rem; }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--gold);
+    transition: width 0.3s ease;
+  }
+
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a:hover::after { width: 100%; }
+
+  /* Hamburger */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+  }
+
+  .nav-toggle span {
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--gold);
+    transition: all 0.3s ease;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    position: relative;
+    height: 100vh;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,168,76,0.07) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(201,168,76,0.04) 0%, transparent 60%),
+      linear-gradient(180deg, #0d0b07 0%, #1a1510 50%, #0d0b07 100%);
+    will-change: transform;
+  }
+
+  /* Candlelight flicker elements */
+  .hero-bg::before {
+    content: '';
+    position: absolute;
+    width: 1px;
+    height: 120px;
+    top: 15%;
+    left: 18%;
+    background: linear-gradient(to bottom, var(--gold-light), transparent);
+    opacity: 0.25;
+    animation: flicker 3.2s ease-in-out infinite;
+  }
+
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    width: 1px;
+    height: 90px;
+    top: 20%;
+    right: 20%;
+    background: linear-gradient(to bottom, var(--gold-light), transparent);
+    opacity: 0.2;
+    animation: flicker 4.1s ease-in-out infinite 1.3s;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.25; transform: scaleX(1); }
+    25% { opacity: 0.15; transform: scaleX(0.8); }
+    50% { opacity: 0.3; transform: scaleX(1.1); }
+    75% { opacity: 0.2; transform: scaleX(0.9); }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.4rem;
+    padding: 2rem;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 0.3s;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(4.5rem, 14vw, 10rem);
+    font-weight: 700;
+    letter-spacing: 0.5em;
+    color: var(--cream);
+    line-height: 1;
+    opacity: 0;
+    animation: heroTitle 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.6s;
+    text-shadow: 0 0 60px rgba(201, 168, 76, 0.2);
+  }
+
+  @keyframes heroTitle {
+    from { opacity: 0; letter-spacing: 0.9em; }
+    to   { opacity: 1; letter-spacing: 0.5em; }
+  }
+
+  .hero-rule {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 1.4s;
+  }
+
+  .hero-subtitle {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    max-width: 480px;
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 1.6s;
+  }
+
+  .hero-verse {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    opacity: 0;
+    animation: fadeUp 1s ease forwards 2s;
+  }
+
+  .scroll-arrow {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    animation: fadeIn 1s ease forwards 2.5s;
+    cursor: pointer;
+  }
+
+  .scroll-arrow span {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .scroll-arrow svg {
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ── SHARED LAYOUT ── */
+  section { position: relative; }
+
+  .section-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+
+  .section-inner.wide {
+    max-width: 1100px;
+  }
+
+  .section-label {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0 3rem;
+  }
+
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4));
+  }
+
+  .section-divider::after {
+    background: linear-gradient(90deg, rgba(201,168,76,0.4), transparent);
+  }
+
+  .section-divider-icon {
+    color: var(--gold);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Scroll animations */
+  .reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.15s; }
+  .reveal-delay-2 { transition-delay: 0.3s; }
+  .reveal-delay-3 { transition-delay: 0.45s; }
+
+  /* ── STORY SECTION ── */
+  #story {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 30%, var(--surface) 70%, var(--bg) 100%);
+  }
+
+  .story-layout {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 0 2rem;
+    position: relative;
+  }
+
+  .timeline-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0.4rem;
+  }
+
+  .timeline-line {
+    width: 1px;
+    flex: 1;
+    background: linear-gradient(180deg, transparent, var(--gold) 10%, var(--gold) 90%, transparent);
+    opacity: 0.4;
+    min-height: 100%;
+  }
+
+  .acts-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4.5rem;
+  }
+
+  .act {
+    position: relative;
+  }
+
+  .act-numeral {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .act-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 600;
+    font-style: italic;
+    color: var(--cream);
+    margin-bottom: 1.4rem;
+    line-height: 1.2;
+  }
+
+  .act-body {
+    font-size: 1.05rem;
+    color: rgba(240,230,208,0.85);
+    line-height: 1.9;
+  }
+
+  .act-body p + p { margin-top: 1rem; }
+
+  .act-separator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+    opacity: 0.5;
+  }
+
+  .act-separator::before,
+  .act-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .act-separator-glyph {
+    font-size: 0.6rem;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+  }
+
+  /* Timeline dot aligned to act */
+  .timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: var(--bg);
+    flex-shrink: 0;
+    margin-top: 0.8rem;
+    box-shadow: 0 0 8px rgba(201,168,76,0.3);
+  }
+
+  /* ── GRACE CARDS ── */
+  #grace {
+    background: var(--bg);
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .grace-card {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    padding: 2rem 1.8rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .grace-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle at top right, rgba(201,168,76,0.06), transparent 70%);
+  }
+
+  .grace-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.15);
+  }
+
+  .card-number {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: rgba(201,168,76,0.18);
+    line-height: 1;
+    margin-bottom: 0.6rem;
+    font-style: italic;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--cream);
+    margin-bottom: 0.5rem;
+  }
+
+  .card-verse {
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .card-body {
+    font-size: 0.95rem;
+    color: rgba(240,230,208,0.8);
+    line-height: 1.8;
+  }
+
+  /* ── SCHOLARS ── */
+  #voices {
+    background: linear-gradient(180deg, var(--bg) 0%, #121009 50%, var(--bg) 100%);
+  }
+
+  .quotes-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+    margin-top: 1rem;
+  }
+
+  .quote-block {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0 1.8rem;
+    align-items: start;
+  }
+
+  .quote-mark {
+    font-family: var(--font-display);
+    font-size: 5rem;
+    line-height: 0.8;
+    color: var(--gold);
+    opacity: 0.35;
+    font-weight: 700;
+    padding-top: 0.2rem;
+    user-select: none;
+  }
+
+  .quote-content { }
+
+  .quote-text {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+    color: var(--cream);
+    line-height: 1.75;
+    margin-bottom: 1.2rem;
+  }
+
+  .quote-attribution {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .quote-author {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .quote-source {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .quote-divider {
+    width: 48px;
+    height: 1px;
+    background: rgba(201,168,76,0.4);
+    margin-top: 1.2rem;
+  }
+
+  /* ── REFLECTION ── */
+  #reflection {
+    background: var(--surface);
+    border-top: 1px solid rgba(201,168,76,0.1);
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .reflection-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 6rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .reflection-flourish {
+    color: var(--gold);
+    opacity: 0.6;
+    font-size: 1.2rem;
+    letter-spacing: 0.5em;
+  }
+
+  .reflection-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1.2;
+  }
+
+  .reflection-text {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+    color: rgba(240,230,208,0.85);
+    line-height: 1.85;
+    max-width: 620px;
+  }
+
+  .reflection-closing {
+    margin-top: 1rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── SOURCES ── */
+  #sources {
+    background: var(--bg);
+    border-top: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .sources-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+  }
+
+  .sources-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2rem;
+  }
+
+  .sources-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .sources-list li {
+    font-family: var(--font-body);
+    font-size: 0.92rem;
+    color: var(--muted);
+    padding-left: 1.2rem;
+    border-left: 1px solid rgba(201,168,76,0.2);
+    line-height: 1.6;
+    transition: border-color 0.3s, color 0.3s;
+  }
+
+  .sources-list li:hover {
+    border-left-color: var(--gold);
+    color: var(--cream);
+  }
+
+  .sources-list em { color: rgba(240,230,208,0.6); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: #080704;
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid rgba(201,168,76,0.08);
+  }
+
+  footer p {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: rgba(138,122,101,0.5);
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 640px) {
+    nav { padding: 0.9rem 1.2rem; }
+    nav.scrolled { padding: 0.65rem 1.2rem; }
+    .nav-links { display: none; flex-direction: column; gap: 1.2rem; }
+    .nav-links.open {
+      display: flex;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(13,11,7,0.97);
+      align-items: center;
+      justify-content: center;
+      z-index: 98;
+    }
+    .nav-links a { font-size: 1.1rem; }
+    .nav-toggle { display: flex; z-index: 99; }
+
+    .story-layout { grid-template-columns: 1fr; }
+    .timeline-col { display: none; }
+    .acts-col { gap: 3rem; }
+
+    .quote-block { grid-template-columns: 50px 1fr; gap: 0 1rem; }
+    .quote-mark { font-size: 3.5rem; }
+
+    .section-inner { padding: 3.5rem 1.25rem; }
+    .reflection-inner { padding: 4rem 1.25rem; }
+  }
+
+  @media (max-width: 400px) {
+    .hero-title { letter-spacing: 0.3em; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── NAVIGATION ── -->
+<nav id="main-nav">
+  <a href="#hero" class="nav-logo">Grace</a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#story" onclick="closeMenu()">Story</a></li>
+    <li><a href="#grace" onclick="closeMenu()">Grace</a></li>
+    <li><a href="#voices" onclick="closeMenu()">Voices</a></li>
+    <li><a href="#reflection" onclick="closeMenu()">Reflection</a></li>
+  </ul>
+  <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Luke 15 &nbsp;·&nbsp; A Creative Meditation</p>
+    <h1 class="hero-title">G R A C E</h1>
+    <div class="hero-rule"></div>
+    <p class="hero-subtitle">A meditation on the Parable of the Prodigal Son</p>
+    <p class="hero-verse">Luke 15:11–32</p>
+  </div>
+  <div class="scroll-arrow" onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'})">
+    <span>Scroll</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+</section>
+
+<!-- ── THE STORY ── -->
+<section id="story">
+  <div class="section-inner">
+    <p class="section-label reveal">The Parable</p>
+    <h2 class="section-title reveal reveal-delay-1">Three Acts of a Human Story</h2>
+    <div class="section-divider reveal reveal-delay-2">
+      <span class="section-divider-icon">✦</span>
+    </div>
+
+    <div class="story-layout">
+      <!-- Timeline column -->
+      <div class="timeline-col" aria-hidden="true">
+        <div class="timeline-dot"></div>
+        <div class="timeline-line"></div>
+      </div>
+
+      <!-- Acts column -->
+      <div class="acts-col">
+
+        <!-- ACT I -->
+        <article class="act reveal">
+          <p class="act-numeral">Act I</p>
+          <h3 class="act-title">The Departure</h3>
+          <div class="act-body">
+            <p>There is a son who cannot wait for life to begin. He goes to his father with a demand dressed up as a request: <em>give me the share of the property that will belong to me.</em> This is no small ask. In the cultural world of first-century Palestine, to request one's inheritance while one's father still breathes was tantamount to wishing him dead. It was a rupture — not only of economics, but of kinship, of covenant, of love.</p>
+            <p>And the father gives it to him. Without argument, without curse, without the stern refusal that every listener of Jesus's day would have expected and applauded. A few days later, the son gathers everything and sets off for a distant country. The Greek is precise: <em>apedēmēsen</em> — he became a stranger. He left behind not just a household but a world, a name, a self.</p>
+            <p>In his going, we recognize ourselves. Who has not, in some season of life, packed up the inheritance of all that was given and set out for the far country — certain that freedom lay beyond the horizon, that the self could be found by leaving it behind?</p>
+          </div>
+          <div class="act-separator">
+            <span class="act-separator-glyph">· · ·</span>
+          </div>
+        </article>
+
+        <!-- ACT II -->
+        <article class="act reveal reveal-delay-1">
+          <p class="act-numeral">Act II</p>
+          <h3 class="act-title">The Ruin</h3>
+          <div class="act-body">
+            <p>The dissolution is swift and total. He squanders his wealth in dissolute living — <em>zōn asōtōs</em>, living without saving, spending without remainder. A severe famine strikes the land, and with it comes the cold logic of consequence: no money, no friends, no country that calls him its own. He hires himself out to a citizen of that place, and is sent into the fields to feed pigs — an image of desolation as extreme as Luke's Jewish audience could imagine, the unclean work in an unclean land for an unclean wage. He is so hungry he desires the carob pods the pigs consume, and no one gives him anything.</p>
+            <p>Then comes the turning point that theologians have long called <em>conversion</em>: <em>eis heauton de elthōn</em> — "coming to himself." Not yet repentance, exactly, but clarity. He remembers. He remembers bread enough to spare. He remembers his father's house. In the far country, amidst the ruin of every illusion, something stirs: the memory of home, and with it, the first fragile movement back.</p>
+            <p>He rehearses a speech. He will say: <em>I am no longer worthy to be called your son; treat me like one of your hired servants.</em> It is the most honest thing he has ever said. And with that honesty, he rises, and he begins the long road home.</p>
+          </div>
+          <div class="act-separator">
+            <span class="act-separator-glyph">· · ·</span>
+          </div>
+        </article>
+
+        <!-- ACT III -->
+        <article class="act reveal reveal-delay-2">
+          <p class="act-numeral">Act III</p>
+          <h3 class="act-title">The Return</h3>
+          <div class="act-body">
+            <p>This is the moment the entire parable has been building toward, and Jesus tells it with a detail so specific it must be intentional: <em>while he was still a great way off, his father saw him.</em> The father has been watching. He has stood at the edge of the property, morning after morning, scanning the road. And when he sees the silhouette of his broken child — still far off, still a ruin — he is moved with compassion, and he runs.</p>
+            <p>In the ancient Mediterranean world, a man of honor did not run. Running was undignified, the province of slaves and children. Yet the father hikes up his robes and sprints down the road, and before his son can finish his rehearsed confession, he is wrapped in arms that have never stopped waiting. A robe is placed on him — covering the rags, restoring the dignity. A ring goes on his finger — restoring the authority. Sandals on his feet — no slave goes shod. And then the feast, the music, the dancing, the killing of the fatted calf. <em>This my son was dead, and is alive again; he was lost, and is found.</em></p>
+            <p>The older son stands outside. His anger is legitimate; his ledger is accurate. He has worked faithfully and received no party. But the father goes out to him too — this detail is easy to miss — and makes the same plea: <em>come in.</em> The parable ends without telling us whether he does. Luke leaves the question open, aimed like an arrow at the self-righteous heart. The door is still ajar. The feast is still going. The invitation stands.</p>
+          </div>
+        </article>
+
+      </div><!-- /acts-col -->
+    </div><!-- /story-layout -->
+  </div>
+</section>
+
+<!-- ── WHAT IS GRACE? ── -->
+<section id="grace">
+  <div class="section-inner">
+    <p class="section-label reveal">Theological Reflection</p>
+    <h2 class="section-title reveal reveal-delay-1">What Is Grace?</h2>
+    <div class="section-divider reveal reveal-delay-2">
+      <span class="section-divider-icon">✦</span>
+    </div>
+
+    <div class="cards-grid">
+      <div class="grace-card reveal">
+        <div class="card-number">I</div>
+        <h3 class="card-title">Unmerited Favor</h3>
+        <p class="card-verse">Ephesians 2:8–9</p>
+        <p class="card-body">Grace, in the New Testament, is never a reward. Paul makes this architecturally clear: <em>it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God — not by works, so that no one can boast.</em> The son in the parable does nothing to earn the father's embrace. He arrives diminished, scripted, broken. The robe is placed on him before his confession is complete. Grace, precisely defined, is what happens before the performance of worthiness begins. It is the gift that precedes the deserving.</p>
+      </div>
+
+      <div class="grace-card reveal reveal-delay-1">
+        <div class="card-number">II</div>
+        <h3 class="card-title">Radical Welcome</h3>
+        <p class="card-verse">Luke 15:20</p>
+        <p class="card-body">The father's running is the theological center of the parable. It is an act that violates social propriety in order to embody something larger than propriety. Kenneth Bailey, in his groundbreaking work on Middle Eastern customs, observed that the father's sprint would have been deeply shameful by the standards of his world — and precisely in that shame-absorbing act lies the parabolic image of divine grace. God does not wait for the penitent to arrive at the door. God comes running, meeting us in the middle distance of our incomplete returning. Welcome, here, is not passive. It is active, urgent, costly.</p>
+      </div>
+
+      <div class="grace-card reveal reveal-delay-2">
+        <div class="card-number">III</div>
+        <h3 class="card-title">Transforming Love</h3>
+        <p class="card-verse">2 Corinthians 5:17</p>
+        <p class="card-body">The son who returns is not merely forgiven — he is reconstituted. Paul's language in Second Corinthians maps precisely onto this dynamic: <em>if anyone is in Christ, there is a new creation; the old has gone, the new is here.</em> The robe is not merely clothing; it is a new identity. The ring is not mere jewelry; it is restored covenant participation. Grace does not patch the old self — it installs a new one. This is why the father says, with the precision of a theologian, that his son <em>was dead</em> and is alive again. Grace is resurrection language. It names what happens when love refuses to let loss be the final word.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SCHOLARLY VOICES ── -->
+<section id="voices">
+  <div class="section-inner">
+    <p class="section-label reveal">Scholarly Voices</p>
+    <h2 class="section-title reveal reveal-delay-1">In Their Own Words</h2>
+    <div class="section-divider reveal reveal-delay-2">
+      <span class="section-divider-icon">✦</span>
+    </div>
+
+    <div class="quotes-stack">
+
+      <blockquote class="quote-block reveal">
+        <div class="quote-mark" aria-hidden="true">&ldquo;</div>
+        <div class="quote-content">
+          <p class="quote-text">The father's love does not depend on the son's return. He has been waiting, watching, wanting. He sees his son from afar, and in that seeing is the whole of what we mean when we speak of compassion — not a sentiment, but a movement of the self toward the suffering of another, a willingness to be in solidarity with the one who is broken.</p>
+          <div class="quote-attribution">
+            <span class="quote-author">Henri J. M. Nouwen</span>
+            <span class="quote-source">The Return of the Prodigal Son: A Story of Homecoming (1992)</span>
+          </div>
+          <div class="quote-divider"></div>
+        </div>
+      </blockquote>
+
+      <blockquote class="quote-block reveal reveal-delay-1">
+        <div class="quote-mark" aria-hidden="true">&ldquo;</div>
+        <div class="quote-content">
+          <p class="quote-text">Grace is not simply a religious word for a vague inner feeling of warmth toward the divine. It is subversive. It declares that the world's systems of merit and retribution are not the final account. Jesus's storytelling is not gentle uplift; it is a structural challenge to every arrangement by which humans decide who belongs and who does not.</p>
+          <div class="quote-attribution">
+            <span class="quote-author">N. T. Wright</span>
+            <span class="quote-source">Simply Good News: Why the Gospel Is News and What Makes It Good (2015)</span>
+          </div>
+          <div class="quote-divider"></div>
+        </div>
+      </blockquote>
+
+      <blockquote class="quote-block reveal reveal-delay-2">
+        <div class="quote-mark" aria-hidden="true">&ldquo;</div>
+        <div class="quote-content">
+          <p class="quote-text">Luke 15 functions as a unit, and the three parables — the lost sheep, the lost coin, the lost son — build toward a climax that is not sentimental but theological: God does not wait to be found. The divine initiative precedes the human response. In the parable of the two sons, it is not merely the younger son's story; the father's relentless outgoing love toward both boys is the narrative center that holds the entire chapter together.</p>
+          <div class="quote-attribution">
+            <span class="quote-author">Luke Timothy Johnson</span>
+            <span class="quote-source">The Gospel of Luke, Sacra Pagina (1991)</span>
+          </div>
+          <div class="quote-divider"></div>
+        </div>
+      </blockquote>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── REFLECTION ── -->
+<section id="reflection">
+  <div class="reflection-inner">
+    <div class="reflection-flourish reveal" aria-hidden="true">— ✦ —</div>
+    <h2 class="reflection-title reveal reveal-delay-1">Our Reflection</h2>
+    <p class="reflection-text reveal reveal-delay-2">
+      We are always somewhere on that road — having left, or returning, or standing outside in the righteous cold of the elder brother, tallying debts the father has already forgiven. What the parable insists upon, with a stubbornness that centuries have not worn smooth, is that the father is always already running. Grace does not wait for us to get our speech right, to arrive presentable, to have earned the threshold. It meets us in the middle distance, in the rags of what we have become, and calls it homecoming. To receive this is perhaps the most difficult thing a human being can do — not because grace is complicated, but because it requires us to stop being the accountant of our own souls, and simply be found.
+    </p>
+    <p class="reflection-closing reveal reveal-delay-3">
+      Made with curiosity and reverence &nbsp;·&nbsp; New Testament Literature &amp; Theology, 2026
+    </p>
+  </div>
+</section>
+
+<!-- ── SOURCES ── -->
+<section id="sources">
+  <div class="sources-inner">
+    <h2 class="sources-title reveal">Sources</h2>
+    <ul class="sources-list">
+      <li class="reveal">Nouwen, Henri J. M. <em>The Return of the Prodigal Son: A Story of Homecoming.</em> New York: Doubleday, 1992.</li>
+      <li class="reveal reveal-delay-1">Wright, N. T. <em>Simply Good News: Why the Gospel Is News and What Makes It Good.</em> New York: HarperOne, 2015.</li>
+      <li class="reveal reveal-delay-2">Johnson, Luke Timothy. <em>The Gospel of Luke.</em> Sacra Pagina 3. Collegeville, MN: Liturgical Press, 1991.</li>
+      <li class="reveal reveal-delay-2">Fitzmyer, Joseph A. <em>The Gospel According to Luke X–XXIV.</em> Anchor Bible 28A. New York: Doubleday, 1985.</li>
+      <li class="reveal reveal-delay-3"><em>The New Oxford Annotated Bible.</em> New Revised Standard Version. Edited by Michael D. Coogan. 5th ed. Oxford: Oxford University Press, 2018.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p>Luke 15:11–32 &nbsp;·&nbsp; New Testament Literature &amp; Theology &nbsp;·&nbsp; 2026</p>
+</footer>
+
+<script>
+// ── NAVIGATION SCROLL EFFECT ──
+const nav = document.getElementById('main-nav');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 60) {
+    nav.classList.add('scrolled');
+  } else {
+    nav.classList.remove('scrolled');
+  }
+}, { passive: true });
+
+// ── MOBILE MENU ──
+const navToggle = document.getElementById('nav-toggle');
+const navLinks  = document.getElementById('nav-links');
+
+navToggle.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+  const isOpen = navLinks.classList.contains('open');
+  navToggle.setAttribute('aria-expanded', isOpen);
+  // Animate hamburger to X
+  const spans = navToggle.querySelectorAll('span');
+  if (isOpen) {
+    spans[0].style.transform = 'translateY(6px) rotate(45deg)';
+    spans[1].style.opacity = '0';
+    spans[2].style.transform = 'translateY(-6px) rotate(-45deg)';
+  } else {
+    spans[0].style.transform = '';
+    spans[1].style.opacity = '';
+    spans[2].style.transform = '';
+  }
+});
+
+function closeMenu() {
+  navLinks.classList.remove('open');
+  const spans = navToggle.querySelectorAll('span');
+  spans[0].style.transform = '';
+  spans[1].style.opacity = '';
+  spans[2].style.transform = '';
+}
+
+// ── HERO PARALLAX ──
+const heroBg = document.getElementById('hero-bg');
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY;
+  if (scrolled < window.innerHeight * 1.5) {
+    heroBg.style.transform = `translateY(${scrolled * 0.35}px)`;
+  }
+}, { passive: true });
+
+// ── INTERSECTION OBSERVER FOR SCROLL REVEALS ──
+const revealEls = document.querySelectorAll('.reveal');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, {
+  threshold: 0.12,
+  rootMargin: '0px 0px -40px 0px'
+});
+
+revealEls.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
