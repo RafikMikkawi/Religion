@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grace — A Meditation on the Prodigal Son</title>
+<meta name="description" content="An interactive meditation on grace through the Parable of the Prodigal Son (Luke 15:11–32).">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
 
 <style>
 /* ═══════════════════════════════════════════
@@ -16,14 +17,17 @@
 
 :root {
   --bg:        #0d0b07;
+  --bg-deep:   #070605;
   --surface:   #1a1510;
   --surface-2: #211c14;
   --gold:      #c9a84c;
   --gold-light:#e8c97a;
+  --gold-deep: #8a6f2c;
   --gold-pale: rgba(201,168,76,0.15);
   --cream:     #f0e6d0;
   --muted:     #8a7a65;
   --ease:      cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 html { scroll-behavior: smooth; font-size: 18px; }
@@ -35,6 +39,11 @@ body {
   line-height: 1.85;
   overflow-x: hidden;
 }
+
+body.preloading { overflow: hidden; height: 100vh; }
+
+/* Selection */
+::selection { background: var(--gold); color: var(--bg); }
 
 /* Grain overlay */
 body::after {
@@ -48,10 +57,80 @@ body::after {
   background-size: 160px 160px;
 }
 
+/* Vignette */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8998;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.4); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════
+   PRELOADER
+═══════════════════════════════════════════ */
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  transition: opacity 1.2s var(--ease), visibility 1.2s;
+}
+#preloader.done {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.preloader-greek {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(4rem, 12vw, 8rem);
+  font-weight: 400;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  opacity: 0;
+  animation: preloaderFade 3s var(--ease) forwards;
+  text-shadow: 0 0 40px rgba(201,168,76,0.4);
+}
+
+.preloader-translit {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  letter-spacing: 0.4em;
+  color: var(--muted);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: preloaderFade 3s 0.5s var(--ease) forwards;
+}
+
+.preloader-line {
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: preloaderLine 2s 1s var(--ease) forwards;
+}
+
+@keyframes preloaderFade {
+  0% { opacity: 0; transform: translateY(15px); }
+  40% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; }
+}
+@keyframes preloaderLine {
+  0%  { width: 0; }
+  100%{ width: 240px; }
+}
 
 /* ═══════════════════════════════════════════
    CURSOR GLOW
@@ -65,8 +144,13 @@ body::after {
   pointer-events: none;
   z-index: 8999;
   transform: translate(-50%, -50%);
-  transition: opacity 0.5s;
+  transition: opacity 0.5s, width 0.4s var(--ease), height 0.4s var(--ease);
   will-change: transform;
+}
+#cursor-glow.magnetic {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 65%);
 }
 
 /* ═══════════════════════════════════════════
@@ -81,6 +165,60 @@ body::after {
   box-shadow: 0 0 10px rgba(201,168,76,0.7);
   z-index: 10000;
   transition: width 0.05s linear;
+}
+
+/* ═══════════════════════════════════════════
+   AUDIO TOGGLE
+═══════════════════════════════════════════ */
+#audio-toggle {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 600;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.3);
+  background: rgba(13,11,7,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s var(--ease);
+  font-size: 1rem;
+}
+#audio-toggle:hover {
+  border-color: var(--gold);
+  transform: scale(1.08);
+  box-shadow: 0 0 30px rgba(201,168,76,0.25);
+}
+#audio-toggle .bars {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: 16px;
+}
+#audio-toggle .bars span {
+  display: block;
+  width: 2px;
+  background: var(--gold);
+  border-radius: 2px;
+  height: 4px;
+  transition: height 0.3s ease;
+}
+#audio-toggle.playing .bars span {
+  animation: audioBar 0.9s ease-in-out infinite;
+}
+#audio-toggle.playing .bars span:nth-child(1) { animation-delay: 0s; }
+#audio-toggle.playing .bars span:nth-child(2) { animation-delay: 0.15s; }
+#audio-toggle.playing .bars span:nth-child(3) { animation-delay: 0.3s; }
+#audio-toggle.playing .bars span:nth-child(4) { animation-delay: 0.45s; }
+@keyframes audioBar {
+  0%,100% { height: 4px; }
+  50%     { height: 14px; }
 }
 
 /* ═══════════════════════════════════════════
@@ -157,6 +295,8 @@ nav.scrolled {
 }
 .nav-links a:hover { color: var(--gold-light); }
 .nav-links a:hover::after { width: 100%; }
+.nav-links a.active { color: var(--gold); }
+.nav-links a.active::after { width: 100%; }
 
 .nav-toggle {
   display: none;
@@ -187,6 +327,7 @@ nav.scrolled {
   justify-content: center;
   text-align: center;
   overflow: hidden;
+  padding: 0; /* override generic section padding so flex centering is true vertical center */
 }
 
 /* Canvas behind everything */
@@ -196,11 +337,19 @@ nav.scrolled {
   z-index: 0;
 }
 
+/* Greek letters canvas (subtle floating) */
+#greek-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.5;
+}
+
 /* Ambient orbs */
 .hero-orbs {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
 }
 .orb {
@@ -250,145 +399,141 @@ nav.scrolled {
 /* Light rays */
 .hero-rays {
   position: absolute;
-  inset: 0;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120vw;
+  height: 80vh;
   z-index: 1;
+  background:
+    conic-gradient(from 200deg at 50% 0%,
+      transparent 0deg,
+      rgba(201,168,76,0.03) 30deg,
+      transparent 40deg,
+      rgba(201,168,76,0.05) 80deg,
+      transparent 90deg,
+      rgba(201,168,76,0.04) 140deg,
+      transparent 180deg);
+  opacity: 0.8;
   pointer-events: none;
-  background: conic-gradient(
-    from 0deg at 50% 44%,
-    transparent 0deg, rgba(201,168,76,0.018) 8deg, transparent 16deg,
-    transparent 42deg, rgba(201,168,76,0.012) 50deg, transparent 58deg,
-    transparent 85deg, rgba(201,168,76,0.022) 93deg, transparent 101deg,
-    transparent 128deg, rgba(201,168,76,0.014) 136deg, transparent 144deg,
-    transparent 172deg, rgba(201,168,76,0.018) 180deg, transparent 188deg,
-    transparent 214deg, rgba(201,168,76,0.012) 222deg, transparent 230deg,
-    transparent 258deg, rgba(201,168,76,0.02) 266deg, transparent 274deg,
-    transparent 310deg, rgba(201,168,76,0.015) 318deg, transparent 326deg,
-    transparent 360deg
-  );
-  animation: raysRotate 50s linear infinite;
+  mix-blend-mode: screen;
 }
-@keyframes raysRotate { to { transform: rotate(360deg); } }
 
-/* Ghost watermark */
+/* Hero ghost letters (watermark) */
 .hero-ghost {
   position: absolute;
-  z-index: 1;
-  font-family: 'Playfair Display', serif;
-  font-size: min(28vw, 340px);
-  font-weight: 900;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(201,168,76,0.035);
-  letter-spacing: 0.08em;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: clamp(14rem, 30vw, 26rem);
+  letter-spacing: 0.05em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(201,168,76,0.04);
+  text-stroke: 1px rgba(201,168,76,0.04);
+  z-index: 1;
   pointer-events: none;
-  user-select: none;
   white-space: nowrap;
+  user-select: none;
 }
 
-/* Vignette */
-#hero::before {
-  content: '';
+/* Concentric rings */
+.hero-ring {
   position: absolute;
-  inset: 0;
+  top: 50%; left: 50%;
+  width: 80vh; height: 80vh;
+  max-width: 900px; max-height: 900px;
+  border: 1px solid rgba(201,168,76,0.08);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
   z-index: 2;
-  background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, rgba(13,11,7,0.6) 100%);
   pointer-events: none;
+  animation: ringPulse 10s ease-in-out infinite;
 }
-#hero::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 25%;
-  background: linear-gradient(to top, var(--bg), transparent);
-  z-index: 2;
-  pointer-events: none;
+.hero-ring-2 {
+  width: 55vh; height: 55vh;
+  max-width: 620px; max-height: 620px;
+  border-color: rgba(201,168,76,0.12);
+  animation: ringPulse 10s ease-in-out infinite 2s;
+}
+@keyframes ringPulse {
+  0%,100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); }
+  50%     { opacity: 1;   transform: translate(-50%,-50%) scale(1.02); }
 }
 
 /* Hero content */
 .hero-content {
   position: relative;
-  z-index: 3;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.6rem;
-  padding: 2rem 1.5rem;
+  padding: 0 2rem;
 }
 
 .hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   font-family: 'EB Garamond', serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.4em;
+  font-size: 0.75rem;
+  letter-spacing: 0.5em;
   text-transform: uppercase;
   color: var(--gold);
   opacity: 0;
-  animation: fadeUp 1.2s var(--ease) forwards 0.5s;
-}
-.hero-eyebrow::before, .hero-eyebrow::after {
-  content: '';
-  width: 30px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold));
-}
-.hero-eyebrow::after {
-  background: linear-gradient(90deg, var(--gold), transparent);
+  animation: fadeInUp 1.2s 0.4s var(--ease) forwards;
 }
 
 .hero-title {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(5rem, 16vw, 11rem);
-  font-weight: 900;
-  letter-spacing: 0.5em;
-  color: var(--cream);
+  font-weight: 400;
+  font-size: clamp(4.5rem, 14vw, 11rem);
+  letter-spacing: 0.4em;
+  margin-right: -0.4em; /* offset last letter spacing */
   line-height: 1;
-  display: flex;
-  gap: 0.05em;
-  perspective: 600px;
+  color: var(--cream);
+  text-shadow: 0 0 60px rgba(201,168,76,0.15);
+  position: relative;
 }
 
 .hero-letter {
   display: inline-block;
   opacity: 0;
-  animation: letterDrop 0.9s var(--ease) forwards;
-  text-shadow:
-    0 0 40px rgba(201,168,76,0.25),
-    0 0 80px rgba(201,168,76,0.1);
+  transform: translateY(25px) rotateX(-30deg);
+  animation: letterIn 1.5s var(--ease) forwards;
+  transform-origin: center bottom;
 }
-@keyframes letterDrop {
-  from { opacity: 0; transform: translateY(-50px) rotateX(-50deg); filter: blur(10px); }
-  to   { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); }
+@keyframes letterIn {
+  0% { opacity: 0; transform: translateY(25px) rotateX(-30deg); }
+  100%{ opacity: 1; transform: translateY(0) rotateX(0); }
 }
 
-/* Shimmer sweep on title after entrance */
-.hero-title.shimmer-ready {
+/* Shimmer applied per-letter (background-clip:text requires the text
+   to be a direct child — spans with inline-block satisfy this) */
+.hero-letter.shimmer-ready {
   background: linear-gradient(
-    105deg,
+    90deg,
     var(--cream) 0%,
-    var(--cream) 35%,
+    var(--cream) 40%,
     var(--gold-light) 50%,
-    var(--cream) 65%,
+    var(--cream) 60%,
     var(--cream) 100%
   );
-  background-size: 200% auto;
+  background-size: 300% 100%;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmerSweep 5s linear infinite;
+  -webkit-text-fill-color: transparent;
+  animation: titleShimmer 5s linear infinite;
 }
-@keyframes shimmerSweep {
-  0%   { background-position: 200% center; }
-  100% { background-position: -200% center; }
+@keyframes titleShimmer {
+  0%  { background-position: 200% 0; }
+  100%{ background-position: -200% 0; }
 }
 
 .hero-ornament {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1.5rem;
   opacity: 0;
-  animation: fadeIn 1s ease forwards 2.4s;
+  animation: fadeInUp 1.2s 1.8s var(--ease) forwards;
 }
 .hero-ornament-line {
   width: 80px; height: 1px;
@@ -401,344 +546,382 @@ nav.scrolled {
   width: 6px; height: 6px;
   background: var(--gold);
   transform: rotate(45deg);
-  box-shadow: 0 0 10px var(--gold), 0 0 20px rgba(201,168,76,0.5);
+  box-shadow: 0 0 12px rgba(201,168,76,0.7);
 }
 
 .hero-subtitle {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cormorant Garamond', serif;
   font-style: italic;
-  font-size: clamp(1rem, 2.8vw, 1.35rem);
-  color: rgba(240,230,208,0.75);
-  letter-spacing: 0.03em;
-  max-width: 520px;
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  color: rgba(240,230,208,0.85);
+  max-width: 560px;
   opacity: 0;
-  animation: fadeUp 1s var(--ease) forwards 2.8s;
+  animation: fadeInUp 1.2s 2s var(--ease) forwards;
 }
 
 .hero-verse {
-  font-size: 0.72rem;
-  letter-spacing: 0.25em;
-  color: var(--gold);
+  font-family: 'EB Garamond', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
   text-transform: uppercase;
+  color: var(--muted);
   opacity: 0;
-  animation: fadeUp 1s var(--ease) forwards 3.1s;
+  animation: fadeInUp 1.2s 2.2s var(--ease) forwards;
 }
 
-/* Pulsing ring under title */
-.hero-ring {
-  position: absolute;
-  z-index: 2;
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  border: 1px solid rgba(201,168,76,0.08);
-  animation: pulseRing 4s ease-in-out infinite;
-  pointer-events: none;
-}
-.hero-ring-2 {
-  width: 500px; height: 500px;
-  animation-delay: 2s;
-}
-@keyframes pulseRing {
-  0%,100% { transform: scale(1); opacity: 0.5; }
-  50%     { transform: scale(1.06); opacity: 0.2; }
+@keyframes fadeInUp {
+  0%  { opacity: 0; transform: translateY(15px); }
+  100%{ opacity: 1; transform: translateY(0); }
 }
 
 /* Scroll arrow */
 .scroll-arrow {
   position: absolute;
-  bottom: 3rem; left: 50%;
+  bottom: 2.5rem;
+  left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  opacity: 0;
-  animation: fadeIn 1s ease forwards 3.5s;
+  gap: 0.8rem;
+  z-index: 10;
   cursor: pointer;
-  z-index: 3;
-  transition: opacity 0.4s;
+  opacity: 0;
+  animation: fadeInUp 1.2s 2.6s var(--ease) forwards;
+  background: none;
+  border: none;
 }
-.scroll-arrow:hover { opacity: 0.7; }
 .scroll-arrow-label {
-  font-size: 0.58rem;
-  letter-spacing: 0.3em;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
   text-transform: uppercase;
   color: var(--muted);
+  transition: color 0.3s ease;
 }
 .scroll-arrow-track {
-  width: 1px; height: 50px;
-  background: rgba(201,168,76,0.2);
+  width: 1px;
+  height: 48px;
+  background: rgba(201,168,76,0.25);
   position: relative;
   overflow: hidden;
 }
 .scroll-arrow-track::after {
   content: '';
   position: absolute;
-  top: -100%; left: 0;
-  width: 100%; height: 100%;
+  top: -48px; left: 0;
+  width: 1px; height: 48px;
   background: linear-gradient(to bottom, transparent, var(--gold));
-  animation: trackDrop 2s ease-in-out infinite;
+  animation: scrollPulse 2.2s ease-in-out infinite;
 }
-@keyframes trackDrop {
-  0%   { top: -100%; }
-  100% { top: 100%; }
-}
-
-/* Keyframe utilities */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+.scroll-arrow:hover .scroll-arrow-label { color: var(--gold-light); }
+@keyframes scrollPulse {
+  0%   { top: -48px; }
+  100% { top: 48px; }
 }
 
 /* ═══════════════════════════════════════════
-   SHARED LAYOUT
+   SECTION GENERAL
 ═══════════════════════════════════════════ */
-.section-inner {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 6rem 2rem;
+section {
+  position: relative;
+  padding: 8rem 0;
 }
-.section-inner.wide { max-width: 1100px; }
 
-/* Section header treatment */
+.section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+
 .s-label {
-  font-size: 0.65rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.7rem;
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--gold);
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   margin-bottom: 1rem;
-}
-.s-label::before {
-  content: '';
-  width: 28px; height: 1px;
-  background: var(--gold);
-  opacity: 0.6;
+  display: inline-block;
 }
 
 .s-title {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(2.2rem, 5.5vw, 3.4rem);
-  font-weight: 700;
+  font-weight: 400;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.05;
   color: var(--cream);
-  line-height: 1.15;
-  margin-bottom: 0.5rem;
+  margin-bottom: 2.5rem;
+  max-width: 900px;
 }
-
 .s-title em {
   font-style: italic;
+  font-weight: 500;
   color: var(--gold-light);
 }
 
-/* Ornamental divider */
 .ornament-divider {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin: 2rem 0 3.5rem;
+  gap: 1.5rem;
+  margin-bottom: 5rem;
+  max-width: 600px;
 }
 .ornament-divider-line {
   flex: 1; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent);
 }
 .ornament-divider-glyph {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.5em;
   color: var(--gold);
   opacity: 0.7;
-  font-size: 0.5rem;
-  letter-spacing: 0.3em;
-}
-.ornament-divider-glyph::before,
-.ornament-divider-glyph::after {
-  content: '◆';
-  font-size: 0.35rem;
-  opacity: 0.5;
 }
 
-/* Scroll reveal classes */
+/* Reveal animation */
 .reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  transform: translateY(30px);
+  transition: opacity 1.2s var(--ease), transform 1.2s var(--ease);
 }
-.reveal.from-left  { transform: translateX(-40px) translateY(0); }
-.reveal.from-right { transform: translateX(40px) translateY(0); }
 .reveal.visible {
   opacity: 1;
-  transform: translate(0, 0);
+  transform: translateY(0);
 }
-.d1 { transition-delay: 0.12s; }
-.d2 { transition-delay: 0.24s; }
-.d3 { transition-delay: 0.36s; }
-.d4 { transition-delay: 0.48s; }
-.d5 { transition-delay: 0.6s; }
+.reveal.d1 { transition-delay: 0.12s; }
+.reveal.d2 { transition-delay: 0.24s; }
+.reveal.d3 { transition-delay: 0.36s; }
+.reveal.d4 { transition-delay: 0.48s; }
+.reveal.d5 { transition-delay: 0.60s; }
+
+/* ═══════════════════════════════════════════
+   JOURNEY MAP SECTION
+═══════════════════════════════════════════ */
+#journey {
+  background: linear-gradient(180deg, var(--bg), var(--surface) 50%, var(--bg));
+  padding: 7rem 0 9rem;
+}
+
+.journey-svg-wrap {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem 0;
+}
+
+.journey-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.journey-path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.5;
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  transition: stroke-dashoffset 2.5s var(--ease);
+  filter: drop-shadow(0 0 6px rgba(201,168,76,0.4));
+}
+.journey-path.drawn {
+  stroke-dashoffset: 0;
+}
+
+.journey-node {
+  cursor: pointer;
+  transition: transform 0.4s var(--ease);
+  transform-origin: center;
+}
+.journey-node circle.outer {
+  fill: var(--bg);
+  stroke: var(--gold);
+  stroke-width: 1;
+  opacity: 0.4;
+  transition: all 0.4s var(--ease);
+}
+.journey-node circle.inner {
+  fill: var(--gold);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease), r 0.4s var(--ease);
+}
+.journey-node.lit circle.outer {
+  opacity: 1;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 10px rgba(201,168,76,0.7));
+}
+.journey-node.lit circle.inner { opacity: 1; }
+.journey-node:hover { transform: scale(1.15); }
+.journey-node text {
+  font-family: 'EB Garamond', serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  fill: var(--muted);
+  transition: fill 0.3s ease;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.journey-node.lit text { fill: var(--gold-light); }
+.journey-node text.label-verse {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  fill: rgba(138,122,101,0.6);
+}
+
+.journey-caption {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
 
 /* ═══════════════════════════════════════════
    STORY SECTION
 ═══════════════════════════════════════════ */
 #story {
-  background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 20%, var(--surface) 80%, var(--bg) 100%);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%);
   position: relative;
-}
-
-/* Subtle manuscript background lines */
-#story::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 35px,
-    rgba(201,168,76,0.018) 35px,
-    rgba(201,168,76,0.018) 36px
-  );
-  pointer-events: none;
 }
 
 .story-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: 1px 1fr;
-  gap: 0 3rem;
-  position: relative;
-}
-
-/* The vertical gold timeline */
-.timeline-spine {
-  position: relative;
-}
-.timeline-spine::before {
-  content: '';
-  position: absolute;
-  top: 20px; bottom: 20px; left: 0;
-  width: 1px;
-  background: linear-gradient(180deg, transparent, rgba(201,168,76,0.5) 10%, rgba(201,168,76,0.5) 90%, transparent);
-}
-
-.acts-wrapper {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: 60px 1fr;
   gap: 0;
 }
 
-/* Each act */
+.timeline-spine {
+  position: relative;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    transparent,
+    rgba(201,168,76,0.35) 10%,
+    rgba(201,168,76,0.35) 90%,
+    transparent);
+  margin: 0 auto;
+}
+
+.acts-wrapper {
+  padding-left: 1.5rem;
+}
+
 .act {
   position: relative;
-  padding: 3.5rem 0 3.5rem 0;
-  overflow: hidden;
+  padding: 4rem 0 6rem;
 }
 
-/* The glowing dot on the timeline for each act */
-.act-dot {
-  position: absolute;
-  left: -3.45rem;
-  top: 4.2rem;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  border: 1px solid var(--gold);
-  background: var(--surface);
-  transition: background 0.5s ease, box-shadow 0.5s ease;
-}
-.act-dot.lit {
-  background: var(--gold);
-  box-shadow: 0 0 14px rgba(201,168,76,0.8), 0 0 28px rgba(201,168,76,0.4);
-}
-
-/* Ghost background numeral */
 .act-ghost-num {
   position: absolute;
-  right: -0.05em; top: 0;
+  top: 2rem;
+  right: 0;
   font-family: 'Playfair Display', serif;
-  font-size: clamp(8rem, 18vw, 14rem);
   font-weight: 900;
+  font-size: clamp(10rem, 22vw, 20rem);
+  line-height: 0.8;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(201,168,76,0.055);
-  line-height: 1;
+  -webkit-text-stroke: 1px rgba(201,168,76,0.06);
+  letter-spacing: -0.05em;
   pointer-events: none;
   user-select: none;
   z-index: 0;
-  transition: -webkit-text-stroke-color 0.5s ease;
+  transition: color 1.2s var(--ease), -webkit-text-stroke-color 1.2s var(--ease);
 }
 .act.revealed .act-ghost-num {
-  -webkit-text-stroke-color: rgba(201,168,76,0.09);
+  -webkit-text-stroke: 1px rgba(201,168,76,0.12);
 }
 
-.act-inner { position: relative; z-index: 1; }
+.act-dot {
+  position: absolute;
+  left: -2.6rem;
+  top: 4.5rem;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid rgba(201,168,76,0.3);
+  z-index: 3;
+  transition: background 0.8s ease, border-color 0.8s ease, box-shadow 0.8s ease, transform 0.6s var(--ease-bounce);
+}
+.act-dot.lit {
+  background: var(--gold);
+  border-color: var(--gold-light);
+  box-shadow: 0 0 18px rgba(201,168,76,0.8), 0 0 3px var(--gold);
+  transform: scale(1.15);
+}
+
+.act-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+}
 
 .act-num-label {
-  font-size: 0.65rem;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.7rem;
   letter-spacing: 0.4em;
-  color: var(--gold);
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
-  opacity: 0.8;
+  color: var(--gold);
+  margin-bottom: 0.8rem;
 }
 
 .act-title {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(1.8rem, 4.5vw, 2.6rem);
-  font-weight: 700;
-  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
   color: var(--cream);
-  line-height: 1.15;
-  margin-bottom: 1.8rem;
-  position: relative;
-}
-.act-title::after {
-  content: '';
-  display: block;
-  margin-top: 1rem;
-  width: 40px; height: 1px;
-  background: var(--gold);
-  opacity: 0.6;
+  margin-bottom: 2rem;
+  font-style: italic;
 }
 
-.act-body {
-  font-size: 1.05rem;
-  color: rgba(240,230,208,0.82);
-  line-height: 1.92;
+.act-body p {
+  font-size: 1.08rem;
+  color: rgba(240,230,208,0.85);
+  margin-bottom: 1.3rem;
 }
-.act-body p + p { margin-top: 1.1rem; }
 
-/* Drop cap on first paragraph of each act */
 .act-body p:first-child::first-letter {
   font-family: 'Playfair Display', serif;
-  font-size: 4.8rem;
-  font-weight: 900;
+  font-weight: 500;
+  font-size: 4.5rem;
   float: left;
-  line-height: 0.72;
-  margin-right: 0.12em;
-  margin-top: 0.08em;
+  line-height: 0.85;
+  margin: 0.35rem 0.8rem 0 0;
   color: var(--gold);
-  text-shadow: 0 0 20px rgba(201,168,76,0.4);
+  text-shadow: 0 0 25px rgba(201,168,76,0.3);
 }
 
-/* Callout verse */
+.act-body em {
+  font-style: italic;
+  color: var(--gold-light);
+  font-weight: 500;
+}
+
 .act-callout {
-  margin: 2rem 0;
-  padding: 1.2rem 1.5rem;
-  border-left: 2px solid var(--gold);
-  background: rgba(201,168,76,0.04);
+  position: relative;
+  margin: 2.5rem 0;
+  padding: 1.8rem 2rem 1.8rem 2.2rem;
   font-family: 'Playfair Display', serif;
   font-style: italic;
-  font-size: 1.05rem;
-  color: rgba(240,230,208,0.9);
+  font-size: 1.15rem;
+  color: rgba(240,230,208,0.92);
+  line-height: 1.6;
+  border-left: 2px solid var(--gold);
+  background: linear-gradient(90deg, rgba(201,168,76,0.05), transparent);
 }
 .act-callout cite {
   display: block;
-  margin-top: 0.5rem;
-  font-style: normal;
+  margin-top: 1rem;
   font-family: 'EB Garamond', serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
+  font-style: normal;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--gold);
 }
@@ -746,57 +929,190 @@ nav.scrolled {
 .act-sep {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  margin-top: 3rem;
-  opacity: 0.4;
-}
-.act-sep::before, .act-sep::after {
-  content: ''; flex: 1; height: 1px;
-  background: var(--gold);
+  justify-content: center;
+  margin: 3rem 0 0;
 }
 .act-sep-inner {
-  font-size: 0.5rem;
   color: var(--gold);
+  opacity: 0.5;
   letter-spacing: 0.5em;
+  font-size: 0.9rem;
 }
 
 /* ═══════════════════════════════════════════
-   GRACE CARDS SECTION
+   GREEK WORD CHIPS — INTERACTIVE
+═══════════════════════════════════════════ */
+.greek-chip {
+  display: inline;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border-bottom: 1px dashed rgba(201,168,76,0.45);
+  color: var(--gold-light);
+  font-style: italic;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  background: rgba(201,168,76,0.03);
+  border-radius: 2px;
+}
+.greek-chip:hover {
+  background: rgba(201,168,76,0.12);
+  border-bottom-color: var(--gold);
+  color: var(--gold);
+}
+.greek-chip::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-right: 5px;
+  opacity: 0.7;
+  vertical-align: middle;
+  animation: chipPulse 3s ease-in-out infinite;
+}
+@keyframes chipPulse {
+  0%,100% { opacity: 0.4; }
+  50%     { opacity: 0.9; }
+}
+
+/* Greek panel (slide-in from right) */
+#greek-panel {
+  position: fixed;
+  top: 0;
+  right: -480px;
+  width: 460px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--surface);
+  border-left: 1px solid rgba(201,168,76,0.2);
+  z-index: 800;
+  padding: 4rem 2.5rem 2rem;
+  overflow-y: auto;
+  transition: right 0.6s var(--ease);
+  box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+}
+#greek-panel.open { right: 0; }
+
+.greek-panel-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  width: 36px; height: 36px;
+  background: none;
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 50%;
+  color: var(--gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+.greek-panel-close:hover {
+  background: rgba(201,168,76,0.1);
+  border-color: var(--gold);
+  transform: rotate(90deg);
+}
+
+.greek-panel-eyebrow {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.greek-panel-word {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.2rem;
+  font-weight: 400;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.greek-panel-translit {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--gold-light);
+  margin-bottom: 1.8rem;
+}
+
+.greek-panel-pronounce {
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+}
+
+.greek-panel-meaning {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--cream);
+  line-height: 1.7;
+  margin-bottom: 1.8rem;
+}
+
+.greek-panel-detail {
+  font-size: 0.95rem;
+  color: rgba(240,230,208,0.75);
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+
+.greek-panel-verse {
+  margin-top: 2rem;
+  padding: 1.2rem 1.4rem;
+  border-left: 2px solid var(--gold);
+  background: rgba(201,168,76,0.04);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: rgba(240,230,208,0.8);
+  line-height: 1.65;
+}
+.greek-panel-verse cite {
+  display: block;
+  margin-top: 0.8rem;
+  font-family: 'EB Garamond', serif;
+  font-style: normal;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ═══════════════════════════════════════════
+   GRACE CARDS
 ═══════════════════════════════════════════ */
 #grace {
   background: var(--bg);
-  position: relative;
-}
-
-/* Large decorative background text */
-#grace::before {
-  content: 'χάρις';
-  position: absolute;
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(8rem, 20vw, 18rem);
-  font-weight: 900;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(201,168,76,0.03);
-  bottom: 2rem; right: 0;
-  pointer-events: none;
-  user-select: none;
-  line-height: 1;
 }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.8rem;
+  margin-top: 1rem;
 }
 
 .grace-card {
+  position: relative;
   background: var(--surface);
   border: 1px solid rgba(201,168,76,0.1);
   border-left: 2px solid var(--gold);
-  padding: 2.2rem 2rem;
-  position: relative;
+  padding: 2.2rem 2rem 2.5rem;
+  transition: transform 0.6s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease, border-color 0.4s ease;
   overflow: hidden;
-  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.4s ease;
   cursor: default;
   will-change: transform;
 }
@@ -813,7 +1129,6 @@ nav.scrolled {
   transition: border-width 0.4s ease;
 }
 
-/* Glow from below on hover */
 .grace-card::after {
   content: '';
   position: absolute;
@@ -869,6 +1184,165 @@ nav.scrolled {
 }
 
 /* ═══════════════════════════════════════════
+   ROAD SECTION — Interactive "Where are you?"
+═══════════════════════════════════════════ */
+#road {
+  background: linear-gradient(180deg, var(--bg), var(--surface-2) 40%, var(--surface-2) 60%, var(--bg));
+  position: relative;
+  overflow: hidden;
+  padding: 8rem 0 9rem;
+}
+
+#road::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 80vw; height: 80vw;
+  max-width: 1000px; max-height: 1000px;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(circle, rgba(201,168,76,0.04), transparent 60%);
+  pointer-events: none;
+  animation: roadPulse 8s ease-in-out infinite;
+}
+@keyframes roadPulse {
+  0%,100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); }
+  50%     { opacity: 1;   transform: translate(-50%,-50%) scale(1.05); }
+}
+
+.road-intro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 3rem;
+  position: relative;
+  z-index: 2;
+}
+
+.road-question {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  color: var(--cream);
+  line-height: 1.5;
+  margin-bottom: 1.2rem;
+}
+
+.road-hint {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.road-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.road-option {
+  background: rgba(26,21,16,0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(201,168,76,0.15);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.5s var(--ease);
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+  color: var(--cream);
+}
+.road-option::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.08), transparent);
+  transition: left 0.8s var(--ease);
+}
+.road-option:hover::before { left: 100%; }
+.road-option:hover {
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 30px rgba(201,168,76,0.1);
+}
+.road-option.active {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  box-shadow: 0 0 40px rgba(201,168,76,0.15);
+}
+
+.road-option-icon {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: var(--gold);
+  margin-bottom: 0.6rem;
+  font-style: italic;
+  display: block;
+}
+
+.road-option-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: var(--cream);
+  margin-bottom: 0.3rem;
+}
+
+.road-option-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.road-response {
+  max-width: 680px;
+  margin: 3rem auto 0;
+  padding: 2.5rem 2rem;
+  background: rgba(26,21,16,0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-top: 2px solid var(--gold);
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  pointer-events: none;
+}
+.road-response.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.road-response-eyebrow {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+.road-response-text {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  color: var(--cream);
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════
    VOICES / QUOTES SECTION
 ═══════════════════════════════════════════ */
 #voices {
@@ -906,7 +1380,6 @@ nav.scrolled {
 }
 .quote-item:last-child { border-bottom: none; }
 
-/* Alternating treatment */
 .quote-item:nth-child(2) { padding-left: clamp(0px, 6vw, 80px); }
 .quote-item:nth-child(3) { padding-left: clamp(0px, 3vw, 40px); }
 
@@ -939,6 +1412,7 @@ nav.scrolled {
   display: flex;
   align-items: center;
   gap: 1.2rem;
+  flex-wrap: wrap;
 }
 .q-byline::before {
   content: '';
@@ -973,7 +1447,6 @@ nav.scrolled {
   border-bottom: 1px solid rgba(201,168,76,0.08);
 }
 
-/* Subtle radial glow behind content */
 #reflection::before {
   content: '';
   position: absolute;
@@ -1003,7 +1476,6 @@ nav.scrolled {
   z-index: 1;
 }
 
-/* Decorative ornamental frame corners */
 .refl-frame {
   position: absolute;
   width: 40px; height: 40px;
@@ -1057,6 +1529,65 @@ nav.scrolled {
   text-transform: uppercase;
   color: var(--muted);
   opacity: 0.75;
+}
+
+/* ═══════════════════════════════════════════
+   CREDITS
+═══════════════════════════════════════════ */
+#credits {
+  background: var(--bg);
+  padding: 5rem 0 2rem;
+}
+
+.credits-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.credits-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 2rem;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  max-width: 720px;
+  margin: 0 auto 3rem;
+}
+
+.credit-card {
+  background: var(--surface);
+  border: 1px solid rgba(201,168,76,0.1);
+  padding: 1.8rem 1.2rem;
+  transition: border-color 0.4s ease, transform 0.4s var(--ease);
+}
+.credit-card:hover {
+  border-color: rgba(201,168,76,0.3);
+  transform: translateY(-3px);
+}
+
+.credit-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  color: var(--cream);
+  margin-bottom: 0.4rem;
+}
+
+.credit-role {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--gold);
+  letter-spacing: 0.08em;
 }
 
 /* ═══════════════════════════════════════════
@@ -1130,6 +1661,12 @@ footer p {
 /* ═══════════════════════════════════════════
    MOBILE
 ═══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  section { padding: 5rem 0; }
+  .section-inner { padding: 0 1.5rem; }
+  #greek-panel { width: 100vw; right: -100vw; padding: 4rem 1.8rem 2rem; }
+}
+
 @media (max-width: 680px) {
   nav { padding: 1rem 1.3rem; }
   nav.scrolled { padding: 0.65rem 1.3rem; }
@@ -1154,21 +1691,41 @@ footer p {
   .acts-wrapper { padding-left: 0; }
 
   #cursor-glow { display: none; }
+  #audio-toggle { bottom: 1rem; right: 1rem; width: 40px; height: 40px; }
 
   .refl-frame { display: none; }
 
   .quote-item:nth-child(2),
   .quote-item:nth-child(3) { padding-left: 0; }
+
+  .journey-node text { font-size: 9px; }
+  .road-options { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 420px) {
   .hero-title { font-size: 4rem; letter-spacing: 0.3em; }
   .act-body p:first-child::first-letter { font-size: 3.5rem; }
+  .road-options { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>
 </head>
 
-<body>
+<body class="preloading">
+
+<!-- ═══ PRELOADER ═══ -->
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-greek">χάρις</div>
+  <div class="preloader-line"></div>
+  <div class="preloader-translit">Charis · Grace</div>
+</div>
 
 <!-- Cursor -->
 <div id="cursor-glow" aria-hidden="true"></div>
@@ -1176,12 +1733,21 @@ footer p {
 <!-- Progress bar -->
 <div id="scroll-progress" aria-hidden="true"></div>
 
+<!-- Audio toggle -->
+<button id="audio-toggle" aria-label="Toggle ambient sound" title="Ambient sound">
+  <div class="bars">
+    <span></span><span></span><span></span><span></span>
+  </div>
+</button>
+
 <!-- ═══ NAV ═══ -->
 <nav id="main-nav" role="navigation" aria-label="Main navigation">
   <a href="#hero" class="nav-logo" aria-label="Grace — Home">Grace</a>
   <ul class="nav-links" id="nav-links" role="list">
+    <li><a href="#journey"    onclick="closeMenu()">Journey</a></li>
     <li><a href="#story"      onclick="closeMenu()">Story</a></li>
     <li><a href="#grace"      onclick="closeMenu()">Grace</a></li>
+    <li><a href="#road"       onclick="closeMenu()">The Road</a></li>
     <li><a href="#voices"     onclick="closeMenu()">Voices</a></li>
     <li><a href="#reflection" onclick="closeMenu()">Reflection</a></li>
   </ul>
@@ -1193,6 +1759,7 @@ footer p {
 <!-- ═══ HERO ═══ -->
 <section id="hero" aria-label="Hero">
   <canvas id="ember-canvas" aria-hidden="true"></canvas>
+  <canvas id="greek-canvas" aria-hidden="true"></canvas>
   <div class="hero-orbs" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -1221,11 +1788,58 @@ footer p {
     <p class="hero-verse">Luke 15:11–32</p>
   </div>
 
-  <div class="scroll-arrow" role="button" tabindex="0" aria-label="Scroll to story"
-       onclick="document.getElementById('story').scrollIntoView({behavior:'smooth'})"
-       onkeydown="if(event.key==='Enter')document.getElementById('story').scrollIntoView({behavior:'smooth'})">
+  <button class="scroll-arrow" type="button" aria-label="Scroll to journey"
+       onclick="document.getElementById('journey').scrollIntoView({behavior:'smooth'})">
     <span class="scroll-arrow-label">Scroll</span>
     <div class="scroll-arrow-track"></div>
+  </button>
+</section>
+
+<!-- ═══ JOURNEY MAP ═══ -->
+<section id="journey">
+  <div class="section-inner">
+    <p class="s-label reveal">Interactive Map</p>
+    <h2 class="s-title reveal d1">The Prodigal's <em>Journey</em></h2>
+    <div class="ornament-divider reveal d2" aria-hidden="true">
+      <div class="ornament-divider-line"></div>
+      <div class="ornament-divider-glyph">✦ ✦ ✦</div>
+      <div class="ornament-divider-line"></div>
+    </div>
+
+    <div class="journey-svg-wrap reveal d2">
+      <svg class="journey-svg" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The prodigal son's journey from home, to the far country, and back">
+        <!-- Path: gentle curve home → far → back home -->
+        <path class="journey-path" id="journeyPath"
+              d="M 90 130 Q 260 30 450 130 Q 640 230 810 130" />
+
+        <!-- Node 1: Home (departure) -->
+        <g class="journey-node" id="jnode-1" transform="translate(90,130)">
+          <circle class="outer" r="16"/>
+          <circle class="inner" r="5"/>
+          <text y="-28">THE HOUSE</text>
+          <text class="label-verse" y="36">LUKE 15:12</text>
+        </g>
+
+        <!-- Node 2: Far country -->
+        <g class="journey-node" id="jnode-2" transform="translate(450,130)">
+          <circle class="outer" r="16"/>
+          <circle class="inner" r="5"/>
+          <text y="-28">FAR COUNTRY</text>
+          <text class="label-verse" y="36">LUKE 15:13–16</text>
+        </g>
+
+        <!-- Node 3: Return -->
+        <g class="journey-node" id="jnode-3" transform="translate(810,130)">
+          <circle class="outer" r="16"/>
+          <circle class="inner" r="5"/>
+          <text y="-28">THE RUNNING FATHER</text>
+          <text class="label-verse" y="36">LUKE 15:20</text>
+        </g>
+      </svg>
+      <p class="journey-caption reveal d3">
+        From the threshold of home, into the distant country, and back into arms that never stopped waiting.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -1239,6 +1853,10 @@ footer p {
       <div class="ornament-divider-glyph">✦ ✦ ✦</div>
       <div class="ornament-divider-line"></div>
     </div>
+
+    <p class="reveal d2" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--muted);margin-bottom:3rem;max-width:600px;font-size:0.95rem;">
+      <span style="color:var(--gold);">◆</span> &nbsp; Hover or tap highlighted Greek words to explore their meaning.
+    </p>
 
     <div class="story-grid">
       <div class="timeline-spine" aria-hidden="true"></div>
@@ -1257,7 +1875,7 @@ footer p {
                 "Father, give me the share of the property that will belong to me."
                 <cite>Luke 15:12 (NRSV)</cite>
               </div>
-              <p>And the father gives it to him. Without argument, without the stern refusal every listener would have applauded. A few days later the son gathers everything and sets off for a distant country. The Greek is precise: <em>apedēmēsen</em> — he became a stranger. He left behind not merely a household but a world, a name, a self. In his going we recognize every season in which we have packed the inheritance of all that was given and set out for the far country, certain that freedom lay beyond the horizon.</p>
+              <p>And the father gives it to him. Without argument, without the stern refusal every listener would have applauded. A few days later the son gathers everything and sets off for a distant country. The Greek is precise: <span class="greek-chip" data-word="apedemesen">apedēmēsen</span> — he became a stranger. He left behind not merely a household but a world, a name, a self. In his going we recognize every season in which we have packed the inheritance of all that was given and set out for the far country, certain that freedom lay beyond the horizon.</p>
               <p>The road stretches ahead with terrible promise. He does not look back.</p>
             </div>
             <div class="act-sep" aria-hidden="true"><span class="act-sep-inner">· · ·</span></div>
@@ -1272,12 +1890,12 @@ footer p {
             <p class="act-num-label">Act II</p>
             <h3 class="act-title">The Ruin</h3>
             <div class="act-body">
-              <p>The dissolution is swift and total. He squanders everything in dissolute living — <em>zōn asōtōs</em>, living without saving, spending without remainder. A severe famine strikes the land, and with it comes the cold logic of consequence. He hires himself out to feed pigs — an image of desolation as extreme as a Jewish audience could imagine — so hungry that the carob pods the pigs consume begin to seem like mercy, and no one gives him anything.</p>
+              <p>The dissolution is swift and total. He squanders everything in dissolute living — <span class="greek-chip" data-word="asotos">zōn asōtōs</span>, living without saving, spending without remainder. A severe famine strikes the land, and with it comes the cold logic of consequence. He hires himself out to feed pigs — an image of desolation as extreme as a Jewish audience could imagine — so hungry that the carob pods the pigs consume begin to seem like mercy, and no one gives him anything.</p>
               <div class="act-callout">
                 "He came to himself and said, 'How many of my father's hired hands have bread enough and to spare, but here I am dying of hunger!'"
                 <cite>Luke 15:17 (NRSV)</cite>
               </div>
-              <p>Then comes the turning that theologians have long called <em>metanoia</em> — conversion: <em>eis heauton de elthōn</em>, "coming to himself." Not yet repentance, exactly, but clarity. He remembers bread enough to spare. He remembers his father's house. In the far country, amidst the ruin of every illusion, something stirs: the memory of home, and with it, the first fragile movement back toward what he had thrown away.</p>
+              <p>Then comes the turning that theologians have long called <span class="greek-chip" data-word="metanoia">metanoia</span> — conversion: <em>eis heauton de elthōn</em>, "coming to himself." Not yet repentance, exactly, but clarity. He remembers bread enough to spare. He remembers his father's house. In the far country, amidst the ruin of every illusion, something stirs: the memory of home, and with it, the first fragile movement back toward what he had thrown away.</p>
               <p>He rehearses a speech. <em>I am no longer worthy to be called your son; treat me as one of your hired servants.</em> It is the most honest thing he has ever said. And with that honesty, he rises, and he begins the long road home.</p>
             </div>
             <div class="act-sep" aria-hidden="true"><span class="act-sep-inner">· · ·</span></div>
@@ -1292,7 +1910,7 @@ footer p {
             <p class="act-num-label">Act III</p>
             <h3 class="act-title">The Return</h3>
             <div class="act-body">
-              <p>This is the moment the entire parable has been building toward, and Jesus tells it with a detail so deliberate it must be intentional: <em>while he was still a great way off, his father saw him.</em> The father has been watching. He has stood at the edge of the property, morning after morning, scanning the road. And when he sees the silhouette of his broken child — still far off, still a ruin — he is moved with compassion, and he runs.</p>
+              <p>This is the moment the entire parable has been building toward, and Jesus tells it with a detail so deliberate it must be intentional: <em>while he was still a great way off, his father saw him.</em> The father has been watching. He has stood at the edge of the property, morning after morning, scanning the road. And when he sees the silhouette of his broken child — still far off, still a ruin — he is moved with <span class="greek-chip" data-word="splagchnizomai">splagchnizomai</span> — compassion — and he runs.</p>
               <div class="act-callout">
                 "But while he was still far off, his father saw him and was filled with compassion; he ran and put his arms around him and kissed him."
                 <cite>Luke 15:20 (NRSV)</cite>
@@ -1344,6 +1962,45 @@ footer p {
   </div>
 </section>
 
+<!-- ═══ THE ROAD — Interactive ═══ -->
+<section id="road">
+  <div class="section-inner">
+    <p class="s-label reveal" style="text-align:center;display:block;">An Invitation</p>
+    <div class="road-intro reveal d1">
+      <p class="road-question">Where are you on the road?</p>
+      <p class="road-hint">Choose the place that most feels like yours today.</p>
+    </div>
+
+    <div class="road-options reveal d2" role="radiogroup" aria-label="Where are you on the road">
+      <button class="road-option" type="button" data-road="leaving" role="radio" aria-checked="false">
+        <span class="road-option-icon">I</span>
+        <span class="road-option-label">Leaving</span>
+        <span class="road-option-sub">the road just ahead</span>
+      </button>
+      <button class="road-option" type="button" data-road="lost" role="radio" aria-checked="false">
+        <span class="road-option-icon">II</span>
+        <span class="road-option-label">Lost</span>
+        <span class="road-option-sub">in the far country</span>
+      </button>
+      <button class="road-option" type="button" data-road="returning" role="radio" aria-checked="false">
+        <span class="road-option-icon">III</span>
+        <span class="road-option-label">Returning</span>
+        <span class="road-option-sub">on the long road back</span>
+      </button>
+      <button class="road-option" type="button" data-road="outside" role="radio" aria-checked="false">
+        <span class="road-option-icon">IV</span>
+        <span class="road-option-label">Outside</span>
+        <span class="road-option-sub">the elder brother's field</span>
+      </button>
+    </div>
+
+    <div class="road-response" id="roadResponse" role="status" aria-live="polite">
+      <p class="road-response-eyebrow" id="roadResponseEyebrow">A Word for the Road</p>
+      <p class="road-response-text" id="roadResponseText"></p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ VOICES ═══ -->
 <section id="voices">
   <div class="section-inner">
@@ -1390,7 +2047,6 @@ footer p {
 
 <!-- ═══ REFLECTION ═══ -->
 <section id="reflection">
-  <!-- Frame corners -->
   <div class="refl-frame tl" aria-hidden="true"></div>
   <div class="refl-frame tr" aria-hidden="true"></div>
   <div class="refl-frame bl" aria-hidden="true"></div>
@@ -1410,6 +2066,27 @@ footer p {
   </div>
 </section>
 
+<!-- ═══ CREDITS ═══ -->
+<section id="credits">
+  <div class="credits-inner">
+    <p class="credits-heading reveal">Created By</p>
+    <div class="credits-grid reveal d1">
+      <div class="credit-card">
+        <p class="credit-name">Your Name</p>
+        <p class="credit-role">Research &amp; Writing</p>
+      </div>
+      <div class="credit-card">
+        <p class="credit-name">Group Member</p>
+        <p class="credit-role">Design &amp; Development</p>
+      </div>
+      <div class="credit-card">
+        <p class="credit-name">Group Member</p>
+        <p class="credit-role">Theological Research</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ SOURCES ═══ -->
 <section id="sources">
   <div class="sources-inner">
@@ -1419,10 +2096,23 @@ footer p {
       <li class="reveal d2">Wright, N. T. <em>Simply Good News: Why the Gospel Is News and What Makes It Good.</em> New York: HarperOne, 2015.</li>
       <li class="reveal d2">Johnson, Luke Timothy. <em>The Gospel of Luke.</em> Sacra Pagina 3. Collegeville, MN: Liturgical Press, 1991.</li>
       <li class="reveal d3">Fitzmyer, Joseph A. <em>The Gospel According to Luke X–XXIV.</em> Anchor Bible 28A. New York: Doubleday, 1985.</li>
-      <li class="reveal d3"><em>The New Oxford Annotated Bible.</em> New Revised Standard Version. Ed. Michael D. Coogan. 5th ed. Oxford: Oxford University Press, 2018.</li>
+      <li class="reveal d3">Bailey, Kenneth E. <em>The Cross &amp; the Prodigal: Luke 15 Through the Eyes of Middle Eastern Peasants.</em> Downers Grove, IL: InterVarsity Press, 2005.</li>
+      <li class="reveal d4"><em>The New Oxford Annotated Bible.</em> New Revised Standard Version. Ed. Michael D. Coogan. 5th ed. Oxford: Oxford University Press, 2018.</li>
     </ul>
   </div>
 </section>
+
+<!-- ═══ GREEK PANEL ═══ -->
+<aside id="greek-panel" aria-hidden="true" aria-labelledby="greekWord" role="dialog">
+  <button class="greek-panel-close" id="greekPanelClose" aria-label="Close Greek panel">✕</button>
+  <p class="greek-panel-eyebrow">Greek Word Study</p>
+  <h3 class="greek-panel-word" id="greekWord">—</h3>
+  <p class="greek-panel-translit" id="greekTranslit">—</p>
+  <p class="greek-panel-pronounce" id="greekPronounce">—</p>
+  <p class="greek-panel-meaning" id="greekMeaning">—</p>
+  <p class="greek-panel-detail" id="greekDetail">—</p>
+  <div class="greek-panel-verse" id="greekVerse"></div>
+</aside>
 
 <!-- ═══ FOOTER ═══ -->
 <footer>
@@ -1430,6 +2120,16 @@ footer p {
 </footer>
 
 <script>
+/* ═══════════════════════════════════════════
+   PRELOADER
+═══════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('preloader').classList.add('done');
+    document.body.classList.remove('preloading');
+  }, 2800);
+});
+
 /* ═══════════════════════════════════════════
    SCROLL PROGRESS BAR
 ═══════════════════════════════════════════ */
@@ -1443,21 +2143,35 @@ function updateProgress() {
 window.addEventListener('scroll', updateProgress, { passive: true });
 
 /* ═══════════════════════════════════════════
-   NAV SCROLL
+   NAV SCROLL + ACTIVE LINK
 ═══════════════════════════════════════════ */
 const mainNav = document.getElementById('main-nav');
+const navLinks = document.querySelectorAll('.nav-links a');
+const sectionIds = ['hero','journey','story','grace','road','voices','reflection'];
+
 window.addEventListener('scroll', () => {
   mainNav.classList.toggle('scrolled', window.scrollY > 50);
+
+  // Active nav link
+  let active = 'hero';
+  const y = window.scrollY + 120;
+  sectionIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= y) active = id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + active);
+  });
 }, { passive: true });
 
 /* ═══════════════════════════════════════════
    MOBILE MENU
 ═══════════════════════════════════════════ */
 const navToggle = document.getElementById('nav-toggle');
-const navLinks  = document.getElementById('nav-links');
+const navLinksEl = document.getElementById('nav-links');
 
 navToggle.addEventListener('click', () => {
-  const open = navLinks.classList.toggle('open');
+  const open = navLinksEl.classList.toggle('open');
   navToggle.setAttribute('aria-expanded', open);
   const s = navToggle.querySelectorAll('span');
   s[0].style.transform = open ? 'translateY(6px) rotate(45deg)'  : '';
@@ -1466,7 +2180,7 @@ navToggle.addEventListener('click', () => {
 });
 
 function closeMenu() {
-  navLinks.classList.remove('open');
+  navLinksEl.classList.remove('open');
   navToggle.setAttribute('aria-expanded', 'false');
   const s = navToggle.querySelectorAll('span');
   s[0].style.transform = s[2].style.transform = '';
@@ -1486,13 +2200,19 @@ document.addEventListener('mousemove', e => {
 });
 
 (function animateCursor() {
-  // Smooth follow with lerp
   glowX += (mouseX - glowX) * 0.08;
   glowY += (mouseY - glowY) * 0.08;
   cursorGlow.style.left = glowX + 'px';
   cursorGlow.style.top  = glowY + 'px';
   requestAnimationFrame(animateCursor);
 })();
+
+// Magnetic effect on interactive elements
+const magneticEls = document.querySelectorAll('.grace-card, .road-option, .nav-logo, .scroll-arrow, #audio-toggle, .journey-node');
+magneticEls.forEach(el => {
+  el.addEventListener('mouseenter', () => cursorGlow.classList.add('magnetic'));
+  el.addEventListener('mouseleave', () => cursorGlow.classList.remove('magnetic'));
+});
 
 /* ═══════════════════════════════════════════
    HERO PARALLAX
@@ -1505,7 +2225,7 @@ window.addEventListener('scroll', () => {
   if (y < window.innerHeight * 1.5) {
     if (heroOrbs)  heroOrbs.style.transform  = `translateY(${y * 0.4}px)`;
     if (heroGhost) heroGhost.style.transform = `translate(-50%, calc(-50% + ${y * 0.25}px))`;
-    if (heroRays)  heroRays.style.transform  = `translateY(${y * 0.15}px) rotate(${y * 0.015}deg)`;
+    if (heroRays)  heroRays.style.transform  = `translateX(-50%) translateY(${y * 0.15}px) rotate(${y * 0.015}deg)`;
   }
 }, { passive: true });
 
@@ -1527,9 +2247,7 @@ window.addEventListener('scroll', () => {
   const EMBER_COUNT = 70;
 
   class Ember {
-    constructor(initialSpread) {
-      this.reset(initialSpread);
-    }
+    constructor(initialSpread) { this.reset(initialSpread); }
     reset(spread) {
       this.x      = Math.random() * canvas.width;
       this.y      = spread ? Math.random() * canvas.height : canvas.height + 10;
@@ -1539,7 +2257,6 @@ window.addEventListener('scroll', () => {
       this.alpha  = Math.random() * 0.5 + 0.15;
       this.life   = 0;
       this.maxLife = Math.random() * 240 + 120;
-      // Gold / amber hue range
       this.hue    = Math.random() * 25 + 28;
       this.sat    = Math.random() * 20 + 70;
       this.lum    = Math.random() * 15 + 60;
@@ -1555,11 +2272,8 @@ window.addEventListener('scroll', () => {
       const fade  = 1 - this.life / this.maxLife;
       const alpha = this.alpha * fade;
       if (alpha < 0.005) return;
-
       ctx.save();
       ctx.globalAlpha = alpha;
-
-      // Glow halo
       const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r * 4);
       grd.addColorStop(0, `hsla(${this.hue},${this.sat}%,${this.lum}%,0.6)`);
       grd.addColorStop(1, `hsla(${this.hue},${this.sat}%,${this.lum}%,0)`);
@@ -1567,14 +2281,11 @@ window.addEventListener('scroll', () => {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.r * 4, 0, Math.PI * 2);
       ctx.fill();
-
-      // Core
       ctx.globalAlpha = alpha * 1.4;
       ctx.fillStyle = `hsla(${this.hue},${this.sat}%,${this.lum}%,1)`;
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.restore();
     }
   }
@@ -1590,16 +2301,80 @@ window.addEventListener('scroll', () => {
 })();
 
 /* ═══════════════════════════════════════════
-   HERO TITLE SHIMMER (after entrance)
+   GREEK LETTERS FLOATING CANVAS
 ═══════════════════════════════════════════ */
+(function() {
+  const canvas = document.getElementById('greek-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize, { passive: true });
+
+  const GREEK_LETTERS = ['χ','α','ρ','ι','ς','φ','ω','ς','ἀ','γ','ά','π','η','λ','ό','γ','ο','ς'];
+  const LETTER_COUNT = 14;
+
+  class GreekLetter {
+    constructor(initial) { this.reset(initial); }
+    reset(initial) {
+      this.x = Math.random() * canvas.width;
+      this.y = initial ? Math.random() * canvas.height : canvas.height + 30;
+      this.char = GREEK_LETTERS[Math.floor(Math.random() * GREEK_LETTERS.length)];
+      this.size = Math.random() * 18 + 14;
+      this.speed = Math.random() * 0.4 + 0.15;
+      this.drift = (Math.random() - 0.5) * 0.15;
+      this.alpha = Math.random() * 0.22 + 0.08;
+      this.life = 0;
+      this.maxLife = Math.random() * 600 + 400;
+    }
+    update() {
+      this.x += this.drift;
+      this.y -= this.speed;
+      this.life++;
+      if (this.life > this.maxLife || this.y < -40) this.reset(false);
+    }
+    draw() {
+      const progress = this.life / this.maxLife;
+      const fade = progress < 0.2 ? progress / 0.2 : (progress > 0.8 ? (1 - progress) / 0.2 : 1);
+      ctx.save();
+      ctx.globalAlpha = this.alpha * fade;
+      ctx.font = `${this.size}px 'Playfair Display', serif`;
+      ctx.fillStyle = '#c9a84c';
+      ctx.fillText(this.char, this.x, this.y);
+      ctx.restore();
+    }
+  }
+
+  const letters = Array.from({ length: LETTER_COUNT }, () => new GreekLetter(true));
+
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    letters.forEach(l => { l.update(); l.draw(); });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ═══════════════════════════════════════════
+   HERO TITLE SHIMMER
+═══════════════════════════════════════════ */
+// Apply shimmer to each letter span — background-clip:text
+// only works when text is a direct child of the element
 setTimeout(() => {
-  document.getElementById('hero-title').classList.add('shimmer-ready');
-}, 3000);
+  document.querySelectorAll('.hero-letter').forEach((l, i) => {
+    l.classList.add('shimmer-ready');
+    // Stagger background-position so the shimmer sweeps left→right across the word
+    l.style.animationDelay = `${i * 0.18}s`;
+  });
+}, 2800);
 
 /* ═══════════════════════════════════════════
    INTERSECTION OBSERVER — REVEAL & TIMELINE
 ═══════════════════════════════════════════ */
-// General reveal
 const revealObs = new IntersectionObserver((entries) => {
   entries.forEach(e => {
     if (e.isIntersecting) {
@@ -1611,20 +2386,42 @@ const revealObs = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-// Act observer — lights up dot & ghost numeral
+// Act observer
 const actObs = new IntersectionObserver((entries) => {
   entries.forEach(e => {
     if (e.isIntersecting) {
       e.target.classList.add('revealed');
-      const id  = e.target.id; // e.g. "act-1"
+      const id  = e.target.id;
       const num = id.split('-')[1];
       const dot = document.getElementById('dot-' + num);
       if (dot) dot.classList.add('lit');
+
+      // Light up matching journey node
+      const jnode = document.getElementById('jnode-' + num);
+      if (jnode) jnode.classList.add('lit');
     }
   });
 }, { threshold: 0.3 });
 
 document.querySelectorAll('.act').forEach(a => actObs.observe(a));
+
+// Journey path draw on entry
+const journeyObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const path = document.getElementById('journeyPath');
+      if (path) path.classList.add('drawn');
+      // Stagger-light nodes
+      setTimeout(() => document.getElementById('jnode-1')?.classList.add('lit'), 400);
+      setTimeout(() => document.getElementById('jnode-2')?.classList.add('lit'), 1400);
+      setTimeout(() => document.getElementById('jnode-3')?.classList.add('lit'), 2400);
+      journeyObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.4 });
+
+const journeySvg = document.querySelector('.journey-svg-wrap');
+if (journeySvg) journeyObs.observe(journeySvg);
 
 /* ═══════════════════════════════════════════
    CARD 3D TILT
@@ -1650,6 +2447,209 @@ document.querySelectorAll('.grace-card').forEach(card => {
     card.style.transition = 'transform 0.6s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s, border-color 0.4s';
     card.style.transform = '';
   });
+});
+
+/* ═══════════════════════════════════════════
+   GREEK WORD PANEL
+═══════════════════════════════════════════ */
+const GREEK_DATA = {
+  'apedemesen': {
+    word: 'ἀπεδήμησεν',
+    translit: 'apedēmēsen',
+    pronounce: 'ah-peh-DAY-may-sen',
+    meaning: 'He went into a far country — literally, "he became a stranger abroad."',
+    detail: 'From ἀπό (away from) + δῆμος (people, homeland). It is not merely geographic travel but an existential unmooring — to become foreign, to cut oneself off from the community that names you. Luke uses it deliberately: the son does not just leave, he estranges himself.',
+    verse: '"A few days later the younger son gathered all he had and travelled to a distant country..."',
+    cite: 'Luke 15:13 (NRSV)'
+  },
+  'asotos': {
+    word: 'ἀσώτως',
+    translit: 'asōtōs',
+    pronounce: 'ah-SOH-tohs',
+    meaning: 'Without saving — dissolutely, prodigally, with no restraint.',
+    detail: 'The Greek root sōzō means "to save, preserve." The alpha-privative makes it a negation: "without saving anything back." From this word we derive the English "prodigal" itself — not primarily wicked, but wasteful; the one who cannot hold anything in reserve.',
+    verse: '"There he squandered his property in dissolute living."',
+    cite: 'Luke 15:13 (NRSV)'
+  },
+  'metanoia': {
+    word: 'μετάνοια',
+    translit: 'metanoia',
+    pronounce: 'meh-TAH-noy-ah',
+    meaning: 'A turning of the mind — repentance as reorientation, not mere regret.',
+    detail: 'From μετά (beyond, after) + νοῦς (mind). Unlike the Latin poenitentia (sorrow, penalty), metanoia names a structural change of perception. The prodigal\'s "coming to himself" (Luke 15:17) is the parable\'s portrait of this turning: clarity breaking in, a new horizon appearing where there had been only ruin.',
+    verse: '"There will be more joy in heaven over one sinner who repents (μετανοοῦντι) than over ninety-nine righteous persons..."',
+    cite: 'Luke 15:7 (NRSV)'
+  },
+  'splagchnizomai': {
+    word: 'ἐσπλαγχνίσθη',
+    translit: 'esplanchnisthē',
+    pronounce: 'es-plangkh-NIS-thay',
+    meaning: 'He was moved in his inward parts — a visceral, gut-level compassion.',
+    detail: 'From σπλάγχνα, the viscera — heart, liver, bowels: in the ancient world, the seat of deepest feeling. This is not abstract pity but compassion that convulses the body. It is the same verb the Gospels use of Jesus himself seeing the crowds, the grieving widow, the leper. Divine mercy, Luke suggests, is always felt in the flesh first.',
+    verse: '"But while he was still far off, his father saw him and was filled with compassion..."',
+    cite: 'Luke 15:20 (NRSV)'
+  }
+};
+
+const greekPanel = document.getElementById('greek-panel');
+const greekChips = document.querySelectorAll('.greek-chip');
+
+greekChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    const key = chip.dataset.word;
+    const data = GREEK_DATA[key];
+    if (!data) return;
+    document.getElementById('greekWord').textContent = data.word;
+    document.getElementById('greekTranslit').textContent = data.translit;
+    document.getElementById('greekPronounce').textContent = '/ ' + data.pronounce + ' /';
+    document.getElementById('greekMeaning').textContent = data.meaning;
+    document.getElementById('greekDetail').textContent = data.detail;
+    document.getElementById('greekVerse').innerHTML =
+      '<span style="font-style:italic;">' + data.verse + '</span><cite>' + data.cite + '</cite>';
+    greekPanel.classList.add('open');
+    greekPanel.setAttribute('aria-hidden', 'false');
+  });
+});
+
+document.getElementById('greekPanelClose').addEventListener('click', () => {
+  greekPanel.classList.remove('open');
+  greekPanel.setAttribute('aria-hidden', 'true');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && greekPanel.classList.contains('open')) {
+    greekPanel.classList.remove('open');
+    greekPanel.setAttribute('aria-hidden', 'true');
+  }
+});
+
+/* ═══════════════════════════════════════════
+   ROAD — "Where are you?" interactive
+═══════════════════════════════════════════ */
+const ROAD_RESPONSES = {
+  leaving: {
+    eyebrow: 'For the one who is leaving',
+    text: '"And the father gave it to him." There was no argument, no lecture. Perhaps the most mysterious grace of all is the grace that lets us go. The road is real. The horizon is yours. But know this: behind you, someone has already begun to watch for your return — before you have even thought of returning.'
+  },
+  lost: {
+    eyebrow: 'For the one in the far country',
+    text: '"And no one gave him anything." If the ground has given way beneath you and the husks are beginning to look like bread, you are in the company of every honest soul in this parable. Stay a moment in the hunger. The parable insists it was precisely there, in the sty, that he came to himself. The road home begins not with worthiness, but with memory.'
+  },
+  returning: {
+    eyebrow: 'For the one on the long road back',
+    text: '"While he was still far off..." Hear this carefully: the father did not wait at the door. He saw you while you were still a great way off. Your speech will not be needed. Your rags will be covered before your confession is complete. Keep walking. The running has already begun from the other end of the road.'
+  },
+  outside: {
+    eyebrow: 'For the one in the elder brother\'s field',
+    text: '"His father came out and pleaded with him." The parable notices you. Luke does not forget the one whose ledger is accurate and whose anger is legitimate. The father goes out twice — to the road, and to the field — and he pleads with the same tenderness he showed the prodigal. The feast is not a betrayal of faithfulness. It is its purpose. Come in.'
+  }
+};
+
+const roadOptions = document.querySelectorAll('.road-option');
+const roadResponse = document.getElementById('roadResponse');
+const roadResponseEyebrow = document.getElementById('roadResponseEyebrow');
+const roadResponseText = document.getElementById('roadResponseText');
+
+roadOptions.forEach(opt => {
+  opt.addEventListener('click', () => {
+    const key = opt.dataset.road;
+    roadOptions.forEach(o => {
+      o.classList.remove('active');
+      o.setAttribute('aria-checked', 'false');
+    });
+    opt.classList.add('active');
+    opt.setAttribute('aria-checked', 'true');
+
+    const data = ROAD_RESPONSES[key];
+    if (!data) return;
+
+    // fade out, then fade in
+    roadResponse.classList.remove('visible');
+    setTimeout(() => {
+      roadResponseEyebrow.textContent = data.eyebrow;
+      roadResponseText.textContent = data.text;
+      roadResponse.classList.add('visible');
+    }, 200);
+  });
+});
+
+/* ═══════════════════════════════════════════
+   AMBIENT AUDIO (Web Audio API — no files needed)
+═══════════════════════════════════════════ */
+const audioToggle = document.getElementById('audio-toggle');
+let audioCtx = null;
+let audioNodes = null;
+let audioPlaying = false;
+
+function startAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = audioCtx.createGain();
+    master.gain.value = 0;
+    master.connect(audioCtx.destination);
+
+    // Deep drone (low sine + slight detune)
+    const osc1 = audioCtx.createOscillator();
+    osc1.type = 'sine';
+    osc1.frequency.value = 55; // A1
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = 82.5; // E2 (perfect fifth)
+    const osc3 = audioCtx.createOscillator();
+    osc3.type = 'triangle';
+    osc3.frequency.value = 110; // A2
+
+    const droneGain = audioCtx.createGain();
+    droneGain.gain.value = 0.22;
+
+    // Slow LFO for modulation (breathing)
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.08;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 0.08;
+    lfo.connect(lfoGain).connect(droneGain.gain);
+
+    // Low-pass filter for warmth
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+    filter.Q.value = 0.8;
+
+    osc1.connect(droneGain);
+    osc2.connect(droneGain);
+    osc3.connect(droneGain);
+    droneGain.connect(filter);
+    filter.connect(master);
+
+    osc1.start(); osc2.start(); osc3.start(); lfo.start();
+
+    // Fade in
+    master.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 2.5);
+
+    audioNodes = { master, oscs: [osc1, osc2, osc3, lfo] };
+    audioPlaying = true;
+    audioToggle.classList.add('playing');
+  } catch(err) {
+    console.warn('Audio unavailable:', err);
+  }
+}
+
+function stopAudio() {
+  if (!audioCtx || !audioNodes) return;
+  audioNodes.master.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);
+  setTimeout(() => {
+    audioNodes.oscs.forEach(o => { try { o.stop(); } catch(e){} });
+    audioCtx.close();
+    audioCtx = null;
+    audioNodes = null;
+  }, 1100);
+  audioPlaying = false;
+  audioToggle.classList.remove('playing');
+}
+
+audioToggle.addEventListener('click', () => {
+  audioPlaying ? stopAudio() : startAudio();
 });
 </script>
 
